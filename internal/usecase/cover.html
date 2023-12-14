@@ -1,0 +1,317 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>usecase: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">gitlab.com/vk-golang/lectures/06_databases/99_hw/redditclone/internal/usecase/comment.go (100.0%)</option>
+				
+				<option value="file1">gitlab.com/vk-golang/lectures/06_databases/99_hw/redditclone/internal/usecase/post.go (100.0%)</option>
+				
+				<option value="file2">gitlab.com/vk-golang/lectures/06_databases/99_hw/redditclone/internal/usecase/usecase.go (100.0%)</option>
+				
+				<option value="file3">gitlab.com/vk-golang/lectures/06_databases/99_hw/redditclone/internal/usecase/user.go (100.0%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package usecase
+
+import (
+        "context"
+        "fmt"
+
+        "gitlab.com/vk-golang/lectures/06_databases/99_hw/redditclone/internal/entity"
+        "gitlab.com/vk-golang/lectures/06_databases/99_hw/redditclone/internal/interfaces"
+)
+
+func (u *usecase) AddComment(ctx context.Context, postID string, comment entity.Comment) (entity.PostExtend, error) <span class="cov8" title="1">{
+        id, errGenID := u.genID.Generate(ctx)
+        if errGenID != nil </span><span class="cov8" title="1">{
+                return entity.PostExtend{}, fmt.Errorf("[usecase.AddComment] entity.NewCommentExtend(comment) failed: %w", interfaces.ErrConstructObject)
+        }</span>
+        <span class="cov8" title="1">commentExtend := entity.NewCommentExtend(comment, id)
+
+        post, errAddComment := u.service.AddComment(ctx, postID, *commentExtend)
+        if errAddComment != nil </span><span class="cov8" title="1">{
+                return entity.PostExtend{}, fmt.Errorf("[usecase.AddComment]-&gt;%w", errAddComment)
+        }</span>
+
+        <span class="cov8" title="1">return post, nil</span>
+}
+
+func (u *usecase) DeleteComment(ctx context.Context, username string, postID string, commentID string) (entity.PostExtend, error) <span class="cov8" title="1">{
+        post, err := u.service.DeleteComment(ctx, username, postID, commentID)
+        if err != nil </span><span class="cov8" title="1">{
+                return entity.PostExtend{}, fmt.Errorf("[usecase.DeleteComment]-&gt;%w", err)
+        }</span>
+
+        <span class="cov8" title="1">return post, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package usecase
+
+import (
+        "context"
+        "fmt"
+
+        "gitlab.com/vk-golang/lectures/06_databases/99_hw/redditclone/internal/entity"
+        "gitlab.com/vk-golang/lectures/06_databases/99_hw/redditclone/internal/interfaces"
+)
+
+func (u *usecase) GetPosts(ctx context.Context) ([]entity.PostExtend, error) <span class="cov8" title="1">{
+        posts, errGetPosts := u.service.GetPosts(ctx)
+        if errGetPosts != nil </span><span class="cov8" title="1">{
+                return []entity.PostExtend{}, fmt.Errorf("[usecase.GetPosts]-&gt;%w", errGetPosts)
+        }</span>
+
+        <span class="cov8" title="1">return posts, nil</span>
+}
+
+func (u *usecase) AddPost(ctx context.Context, post entity.Post) (entity.PostExtend, error) <span class="cov8" title="1">{
+        id, errGenID := u.genID.Generate(ctx)
+        if errGenID != nil </span><span class="cov8" title="1">{
+                return entity.PostExtend{}, fmt.Errorf("[usecase.AddPost]: %w", interfaces.ErrConstructObject)
+        }</span>
+        <span class="cov8" title="1">postExtend := entity.NewPostExtend(post, id)
+
+        errAddPost := u.service.AddPost(ctx, *postExtend)
+        if errAddPost != nil </span><span class="cov8" title="1">{
+                return entity.PostExtend{}, fmt.Errorf("[usecase.AddPost]-&gt;%w", errAddPost)
+        }</span>
+
+        <span class="cov8" title="1">return *postExtend, nil</span>
+}
+
+func (u *usecase) GetPostsWithCategory(ctx context.Context, category string) ([]entity.PostExtend, error) <span class="cov8" title="1">{
+        posts, errGetPosts := u.service.GetPostsWithCategory(ctx, category)
+        if errGetPosts != nil </span><span class="cov8" title="1">{
+                return []entity.PostExtend{}, fmt.Errorf("[usecase.GetPostsWithCategory]-&gt;%w", errGetPosts)
+        }</span>
+
+        <span class="cov8" title="1">return posts, nil</span>
+}
+
+func (u *usecase) GetPostsWithUser(ctx context.Context, username string) ([]entity.PostExtend, error) <span class="cov8" title="1">{
+        posts, errGetPosts := u.service.GetPostsWithUser(ctx, username)
+        if errGetPosts != nil </span><span class="cov8" title="1">{
+                return []entity.PostExtend{}, fmt.Errorf("[usecase.GetPostsWithUser]-&gt;%w", errGetPosts)
+        }</span>
+
+        <span class="cov8" title="1">return posts, nil</span>
+}
+
+func (u *usecase) GetPost(ctx context.Context, postID string) (entity.PostExtend, error) <span class="cov8" title="1">{
+        post, err := u.service.GetPost(ctx, postID)
+        if err != nil </span><span class="cov8" title="1">{
+                return entity.PostExtend{}, fmt.Errorf("[usecase.GetPost]-&gt;%w", err)
+        }</span>
+
+        <span class="cov8" title="1">return post, nil</span>
+}
+
+func (u *usecase) DeletePost(ctx context.Context, username string, postID string) error <span class="cov8" title="1">{
+        err := u.service.DeletePost(ctx, username, postID)
+        if err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("[usecase.DeletePost]-&gt;%w", err)
+        }</span>
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+func (u *usecase) Upvote(ctx context.Context, userID string, postID string) (entity.PostExtend, error) <span class="cov8" title="1">{
+        post, err := u.service.UpvotePost(ctx, userID, postID)
+        if err != nil </span><span class="cov8" title="1">{
+                return entity.PostExtend{}, fmt.Errorf("[usecase.Upvote]-&gt;%w", err)
+        }</span>
+
+        <span class="cov8" title="1">return post, nil</span>
+}
+
+func (u *usecase) Downvote(ctx context.Context, userID string, postID string) (entity.PostExtend, error) <span class="cov8" title="1">{
+        post, err := u.service.DownvotePost(ctx, userID, postID)
+        if err != nil </span><span class="cov8" title="1">{
+                return entity.PostExtend{}, fmt.Errorf("[usecase.Downvote]-&gt;%w", err)
+        }</span>
+
+        <span class="cov8" title="1">return post, nil</span>
+}
+
+func (u *usecase) Unvote(ctx context.Context, userID string, postID string) (entity.PostExtend, error) <span class="cov8" title="1">{
+        post, err := u.service.UnvotePost(ctx, userID, postID)
+        if err != nil </span><span class="cov8" title="1">{
+                return entity.PostExtend{}, fmt.Errorf("[usecase.Unvote]-&gt;%w", err)
+        }</span>
+
+        <span class="cov8" title="1">return post, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package usecase
+
+import (
+        "sync"
+
+        "gitlab.com/vk-golang/lectures/06_databases/99_hw/redditclone/internal/interfaces"
+)
+
+type usecase struct {
+        mu      *sync.RWMutex
+        service interfaces.IService
+        genID   interfaces.IGeneratorID
+}
+
+var _ interfaces.IUseCase = (*usecase)(nil)
+
+func NewUseCase(s interfaces.IService, g interfaces.IGeneratorID) *usecase <span class="cov8" title="1">{
+        return &amp;usecase{
+                mu:      &amp;sync.RWMutex{},
+                service: s,
+                genID:   g,
+        }
+}</span>
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package usecase
+
+import (
+        "context"
+        "fmt"
+
+        "gitlab.com/vk-golang/lectures/06_databases/99_hw/redditclone/internal/entity"
+        "gitlab.com/vk-golang/lectures/06_databases/99_hw/redditclone/internal/interfaces"
+)
+
+func (u *usecase) SignUp(ctx context.Context, user entity.User) (entity.UserExtend, error) <span class="cov8" title="1">{
+        u.mu.Lock()
+        defer u.mu.Unlock()
+
+        exists, errContains := u.service.ContainsUser(ctx, user.Username)
+        if errContains != nil </span><span class="cov8" title="1">{
+                return entity.UserExtend{}, fmt.Errorf("[usecase.SignUp]-&gt;%w", errContains)
+        }</span>
+        <span class="cov8" title="1">if exists </span><span class="cov8" title="1">{
+                return entity.UserExtend{}, fmt.Errorf("[usecase.SignUp]: %w", interfaces.ErrUserExists)
+        }</span>
+
+        <span class="cov8" title="1">id, errGenID := u.genID.Generate(ctx)
+        if errGenID != nil </span><span class="cov8" title="1">{
+                return entity.UserExtend{}, fmt.Errorf("[usecase.SignUp]: %w", interfaces.ErrConstructObject)
+        }</span>
+
+        <span class="cov8" title="1">userExtend := entity.NewUserExtend(user, id)
+
+        errAddUser := u.service.AddUser(ctx, *userExtend)
+        if errAddUser != nil </span><span class="cov8" title="1">{
+                return entity.UserExtend{}, fmt.Errorf("[usecase.SignUp]: %w", errAddUser)
+        }</span>
+
+        <span class="cov8" title="1">return *userExtend, nil</span>
+}
+
+func (u *usecase) Login(ctx context.Context, username string, password string) (entity.UserExtend, error) <span class="cov8" title="1">{
+        user, err := u.service.GetUser(ctx, username)
+        if err != nil </span><span class="cov8" title="1">{
+                return entity.UserExtend{}, fmt.Errorf("[usecase.Login]-&gt;%w", err)
+        }</span>
+
+        <span class="cov8" title="1">if user.Password != password </span><span class="cov8" title="1">{
+                return entity.UserExtend{}, fmt.Errorf("[usecase.Login]: %w", interfaces.ErrInvalidPassword)
+        }</span>
+
+        <span class="cov8" title="1">return user, nil</span>
+
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>

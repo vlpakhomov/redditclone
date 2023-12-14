@@ -1,0 +1,1069 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>handler: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">gitlab.com/vk-golang/lectures/06_databases/99_hw/redditclone/internal/controller/handler/comment.go (37.9%)</option>
+				
+				<option value="file1">gitlab.com/vk-golang/lectures/06_databases/99_hw/redditclone/internal/controller/handler/handler.go (20.0%)</option>
+				
+				<option value="file2">gitlab.com/vk-golang/lectures/06_databases/99_hw/redditclone/internal/controller/handler/post.go (39.4%)</option>
+				
+				<option value="file3">gitlab.com/vk-golang/lectures/06_databases/99_hw/redditclone/internal/controller/handler/user.go (27.8%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package handler
+
+import (
+        "encoding/json"
+        "errors"
+        "io"
+        "log"
+        "net/http"
+        "time"
+
+        "github.com/gorilla/mux"
+
+        "gitlab.com/vk-golang/lectures/06_databases/99_hw/redditclone/internal/controller/auth"
+        "gitlab.com/vk-golang/lectures/06_databases/99_hw/redditclone/internal/controller/middleware"
+        "gitlab.com/vk-golang/lectures/06_databases/99_hw/redditclone/internal/entity"
+        "gitlab.com/vk-golang/lectures/06_databases/99_hw/redditclone/internal/interfaces"
+)
+
+func (h *Handler) AddComment(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        ctx := r.Context()
+        rawSession := r.Context().Value(auth.SessKey)
+        if rawSession == nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusUnauthorized)
+                log.Println("[||ERROR|| Handler.AddComment]: unauthorized")
+                return
+        }</span>
+        <span class="cov8" title="1">session, ok := rawSession.(auth.Session)
+        if !ok </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                log.Println("||ERROR|| [Handler.AddComment]: type assertion rawSession.(auth.Session) failed")
+                return
+        }</span>
+        <span class="cov8" title="1">username := session.Username
+        id := session.ID
+
+        rawCallTime := r.Context().Value(middleware.CallTimeKey)
+        if rawSession == nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                log.Println("[||ERROR|| Handler.AddComment]: r.Context().Value(middleware.CallTimeKey) failed")
+                return
+        }</span>
+        <span class="cov8" title="1">callTime, ok := rawCallTime.(time.Time)
+        if !ok </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                log.Println("||ERROR|| [Handler.AddComment]: type assertion rawCallTime.(time.Time) failed")
+                return
+        }</span>
+
+        <span class="cov8" title="1">postID := mux.Vars(r)["postID"]
+
+        body, errBodyReadAll := io.ReadAll(r.Body)
+        if errBodyReadAll != nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                log.Printf("||ERROR|| [Handler.AddComment]: io.ReadAll(req.Body) failed: %v\n", errBodyReadAll)
+                return
+        }</span>
+
+        <span class="cov8" title="1">objReq := struct {
+                Comment string `json:"comment"`
+        }{}
+
+        errReqUnmarshal := json.Unmarshal(body, &amp;objReq)
+        if errReqUnmarshal != nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                log.Printf("||ERROR|| [Handler.AddComment]: json.Unmarshal(req.Body, &amp;objReq) failed: %v\n", errReqUnmarshal)
+                return
+        }</span>
+
+        <span class="cov8" title="1">author := entity.Author{
+                Username: username,
+                ID:       id,
+        }
+        comment := entity.Comment{
+                Author:      author,
+                CreatedTime: callTime,
+                Body:        objReq.Comment,
+        }
+
+        post, errAddComment := h.useCase.AddComment(ctx, postID, comment)
+        if errAddComment != nil </span><span class="cov0" title="0">{
+                log.Printf("||ERROR|| [Handler.AddComment]-&gt;%v", errAddComment)
+
+                objResp := struct {
+                        Message string `json:"message"`
+                }{}
+                switch </span>{
+                case errors.Is(errAddComment, interfaces.ErrConstructObject):<span class="cov0" title="0">
+                        objResp.Message = errConstructObjectMsg</span>
+
+                default:<span class="cov0" title="0">
+                        objResp.Message = errUnknownErrorMsg</span>
+                }
+                <span class="cov0" title="0">resp, errRespMarshal := json.Marshal(objResp)
+                if errRespMarshal != nil </span><span class="cov0" title="0">{
+                        w.WriteHeader(http.StatusInternalServerError)
+                        log.Printf("||ERROR|| [Handler.DeleteComment]: json.Marshal(objResp) failed: %v\n", errRespMarshal)
+                        return
+                }</span>
+
+                <span class="cov0" title="0">w.WriteHeader(http.StatusInternalServerError)
+                if _, errRespWrite := w.Write(resp); errRespWrite != nil </span><span class="cov0" title="0">{
+                        log.Printf("||ERROR|| [Handler.DeleteComment]: w.Write(resp) failed: %v\n", errRespWrite)
+                        return
+                }</span>
+
+                <span class="cov0" title="0">return</span>
+        }
+
+        <span class="cov8" title="1">resp, errPostMarshal := json.Marshal(post)
+        if errPostMarshal != nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                log.Printf("||ERROR|| [Handler.AddComment]: json.Marshal(post) failed: %v\n", errPostMarshal)
+                return
+        }</span>
+
+        <span class="cov8" title="1">w.WriteHeader(http.StatusOK)
+        if _, errRespWrite := w.Write(resp); errRespWrite != nil </span><span class="cov0" title="0">{
+                log.Printf("||ERROR|| [Handler.AddComment]: w.Write(resp) failed: %v\n", errRespWrite)
+                return
+        }</span>
+
+}
+
+func (h *Handler) DeleteComment(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        ctx := r.Context()
+        rawSession := r.Context().Value(auth.SessKey)
+        if rawSession == nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusUnauthorized)
+                log.Println("||ERROR|| [Handler.DeleteComment]: unauthorized")
+                return
+        }</span>
+        <span class="cov8" title="1">session, ok := rawSession.(auth.Session)
+        if !ok </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                log.Println("||ERROR|| [Handler.DeleteComment]: type assertion rawSession.(auth.Session) failed")
+                return
+        }</span>
+        <span class="cov8" title="1">username := session.Username
+
+        postID := mux.Vars(r)["postID"]
+        commentID := mux.Vars(r)["commentID"]
+
+        post, errDeleteComment := h.useCase.DeleteComment(ctx, username, postID, commentID)
+        if errDeleteComment != nil </span><span class="cov0" title="0">{
+                log.Printf("||ERROR|| [Handler.DeleteComment]-&gt;%v", errDeleteComment)
+
+                switch </span>{
+                case errors.Is(errDeleteComment, interfaces.ErrAccessDenied):<span class="cov0" title="0">
+                        w.WriteHeader(http.StatusUnauthorized)
+                        return</span>
+                default:<span class="cov0" title="0">
+                        objResp := struct {
+                                Message string `json:"message"`
+                        }{
+                                Message: errUnknownErrorMsg,
+                        }
+
+                        resp, errRespMarshal := json.Marshal(objResp)
+                        if errRespMarshal != nil </span><span class="cov0" title="0">{
+                                w.WriteHeader(http.StatusInternalServerError)
+                                log.Printf("||ERROR|| [Handler.DeleteComment]: json.Marshal(objResp) failed: %v\n", errRespMarshal)
+                                return
+                        }</span>
+
+                        <span class="cov0" title="0">w.WriteHeader(http.StatusInternalServerError)
+                        if _, errRespWrite := w.Write(resp); errRespWrite != nil </span><span class="cov0" title="0">{
+                                log.Printf("||ERROR|| [Handler.DeleteComment]: w.Write(resp) failed: %v\n", errRespWrite)
+                                return
+                        }</span>
+
+                        <span class="cov0" title="0">return</span>
+                }
+        }
+
+        <span class="cov8" title="1">resp, errPostMarshal := json.Marshal(post)
+        if errPostMarshal != nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                log.Printf("||ERROR|| [Handler.DeleteComment]: json.Marshal(post) failed: %v\n", errPostMarshal)
+                return
+        }</span>
+
+        <span class="cov8" title="1">w.WriteHeader(http.StatusOK)
+        if _, errRespWrite := w.Write(resp); errRespWrite != nil </span><span class="cov0" title="0">{
+                log.Printf("||ERROR|| [Handler.DeleteComment]: w.Write(resp) failed: %v\n", errRespWrite)
+                return
+        }</span>
+
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package handler
+
+import (
+        "html/template"
+        "log"
+        "net/http"
+
+        "gitlab.com/vk-golang/lectures/06_databases/99_hw/redditclone/internal/interfaces"
+)
+
+const (
+        errConstructObjectMsg = "construct object error"
+        errUnknownErrorMsg    = "unknown error"
+        errPostNotFoundMsg    = "post not found"
+        errAlreadyUpvoteMsg   = "already upvote"
+        errAlreadyDownvoteMsg = "already downvote"
+        errAlreadyUnvoteMsg   = "already unvote"
+        errInvalidPasswordMsg = "invalid password"
+        errUserNotExistsMsg   = "user doesn't exists"
+        errUserAlreadyExists  = "user already exists"
+        successMsg            = "success"
+)
+
+type handlerError struct {
+        Location string `json:"location"`
+        Param    string `json:"param"`
+        Value    string `json:"value"`
+        Msg      string `json:"msg"`
+}
+
+type Handler struct {
+        useCase  interfaces.IUseCase
+        template *template.Template
+        Auth     interfaces.IAuthManager
+}
+
+func NewHandler(useCase interfaces.IUseCase, template *template.Template, auth interfaces.IAuthManager) *Handler <span class="cov8" title="1">{
+        return &amp;Handler{
+                useCase:  useCase,
+                template: template,
+                Auth:     auth,
+        }
+}</span>
+
+func (h *Handler) Index(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+        err := h.template.ExecuteTemplate(w, "index.html", nil)
+        if err != nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                log.Printf("||ERROR|| h.template.ExecuteTemplate(w, name, nil) failed: %v\n", err)
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package handler
+
+import (
+        "encoding/json"
+        "errors"
+        "fmt"
+        "io"
+        "log"
+        "net/http"
+        "time"
+
+        "github.com/gorilla/mux"
+        "gitlab.com/vk-golang/lectures/06_databases/99_hw/redditclone/internal/controller/auth"
+        "gitlab.com/vk-golang/lectures/06_databases/99_hw/redditclone/internal/controller/middleware"
+        "gitlab.com/vk-golang/lectures/06_databases/99_hw/redditclone/internal/entity"
+        "gitlab.com/vk-golang/lectures/06_databases/99_hw/redditclone/internal/interfaces"
+)
+
+func (h *Handler) GetPosts(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        ctx := r.Context()
+
+        posts, errGetPosts := h.useCase.GetPosts(ctx)
+        if errGetPosts != nil </span><span class="cov8" title="1">{
+                w.WriteHeader(http.StatusInternalServerError)
+                log.Printf("||ERROR|| [Handler.GetPosts]: h.useCase.GetPosts(ctx) failed: %v\n", errGetPosts)
+                return
+        }</span>
+
+        <span class="cov8" title="1">resp, errPostsMarshal := json.Marshal(posts)
+        if errPostsMarshal != nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                log.Printf("||ERROR|| [Handler.GetPosts]: json.Marshal(posts) failed: %v\n", errPostsMarshal)
+                return
+        }</span>
+
+        <span class="cov8" title="1">w.WriteHeader(http.StatusOK)
+        if _, err := w.Write(resp); err != nil </span><span class="cov0" title="0">{
+                log.Printf("||ERROR|| [Handler.GetPosts]: w.Write(resp) failed: %v\n", err)
+                return
+        }</span>
+}
+
+func (h *Handler) AddPost(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        ctx := r.Context()
+        rawSession := r.Context().Value(auth.SessKey)
+        if rawSession == nil </span><span class="cov8" title="1">{
+                w.WriteHeader(http.StatusUnauthorized)
+                log.Println("||ERROR|| [Handler.AddPost]: unauthorized")
+                return
+        }</span>
+        <span class="cov8" title="1">session, ok := rawSession.(auth.Session)
+        if !ok </span><span class="cov8" title="1">{
+                w.WriteHeader(http.StatusInternalServerError)
+                log.Println("||ERROR|| [Handler.AddPost]: type assertion rawSession.(auth.Session) failed")
+                return
+        }</span>
+        <span class="cov8" title="1">username := session.Username
+        id := session.ID
+
+        rawCallTime := r.Context().Value(middleware.CallTimeKey)
+        if rawCallTime == nil </span><span class="cov8" title="1">{
+                w.WriteHeader(http.StatusInternalServerError)
+                log.Println("[||ERROR|| Handler.AddPost]: r.Context().Value(middleware.CallTimeKey) failed")
+                return
+        }</span>
+        <span class="cov8" title="1">callTime, ok := rawCallTime.(time.Time)
+        if !ok </span><span class="cov8" title="1">{
+                w.WriteHeader(http.StatusInternalServerError)
+                log.Println("||ERROR|| [Handler.AddPost]: type assertion rawCallTime.(time.Time) failed")
+                return
+        }</span>
+
+        <span class="cov8" title="1">body, errBodyReadAll := io.ReadAll(r.Body)
+        fmt.Println(r.Body, errBodyReadAll)
+        if errBodyReadAll != nil </span><span class="cov8" title="1">{
+                w.WriteHeader(http.StatusInternalServerError)
+                log.Printf("||ERROR|| [Handler.AddPost]: io.ReadAll(req.Body) failed: %v\n", errBodyReadAll)
+                return
+        }</span>
+
+        <span class="cov8" title="1">objReq := struct {
+                Category string
+                Text     string
+                URL      string
+                Title    string
+                Type     string
+        }{}
+
+        errReqUnmarshal := json.Unmarshal(body, &amp;objReq)
+        if errReqUnmarshal != nil </span><span class="cov8" title="1">{
+                w.WriteHeader(http.StatusInternalServerError)
+                log.Printf("||ERROR|| [Handler.AddPost]: json.Unmarshal(body, &amp;objReq) failed: %v\n", errReqUnmarshal)
+                return
+        }</span>
+
+        <span class="cov8" title="1">author := entity.Author{
+                Username: username,
+                ID:       id,
+        }
+        post := entity.Post{
+                Score:            0,
+                Views:            1,
+                Type:             objReq.Type,
+                Title:            objReq.Title,
+                Author:           author,
+                Category:         objReq.Category,
+                Text:             objReq.Text,
+                URL:              objReq.URL,
+                Votes:            []entity.Vote{},
+                Comments:         []entity.CommentExtend{},
+                CreatedTime:      callTime,
+                UpvotePercentage: 0,
+        }
+        postExtend, errAddPost := h.useCase.AddPost(ctx, post)
+        if errAddPost != nil </span><span class="cov8" title="1">{
+                log.Printf("||ERROR|| [Handler.AddPost]-&gt;%v", errAddPost)
+
+                objResp := struct {
+                        Message string `json:"message"`
+                }{}
+                switch </span>{
+                case errors.Is(errAddPost, interfaces.ErrConstructObject):<span class="cov8" title="1">
+                        objResp.Message = errConstructObjectMsg</span>
+                default:<span class="cov8" title="1">
+                        objResp.Message = errUnknownErrorMsg</span>
+                }
+
+                <span class="cov8" title="1">resp, errRespMarshal := json.Marshal(objResp)
+                if errRespMarshal != nil </span><span class="cov0" title="0">{
+                        w.WriteHeader(http.StatusInternalServerError)
+                        log.Printf("||ERROR|| [Handler.AddPost]: json.Marshal(objResp) failed: %v\n", errRespMarshal)
+                        return
+                }</span>
+
+                <span class="cov8" title="1">w.WriteHeader(http.StatusInternalServerError)
+                if _, errRespWrite := w.Write(resp); errRespWrite != nil </span><span class="cov8" title="1">{
+                        log.Printf("||ERROR|| [Handler.AddPost]: w.Write(resp) failed: %v\n", errRespWrite)
+                        return
+                }</span>
+
+                <span class="cov8" title="1">return</span>
+        }
+
+        <span class="cov8" title="1">resp, errPostMarshal := json.Marshal(postExtend)
+        if errPostMarshal != nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                log.Printf("||ERROR|| [Handler.AddPost]: json.Marshal(postExtend) failed: %v\n", errPostMarshal)
+                return
+        }</span>
+
+        <span class="cov8" title="1">w.WriteHeader(http.StatusOK)
+        if _, errRespWrite := w.Write(resp); errRespWrite != nil </span><span class="cov8" title="1">{
+                log.Printf("||ERROR|| [Handler.AddPost]: w.Write(resp) failed: %v\n", errRespWrite)
+                return
+        }</span>
+
+}
+
+func (h *Handler) GetPostsWithCategory(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        ctx := r.Context()
+        category := mux.Vars(r)["categoryName"]
+
+        posts, errGetPosts := h.useCase.GetPostsWithCategory(ctx, category)
+        if errGetPosts != nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                log.Printf("||ERROR|| [Handler.GetPostsWithCategory]: h.useCase.GetPostsWithCategory(ctx, category) failed: %v\n", errGetPosts)
+                return
+        }</span>
+
+        <span class="cov8" title="1">resp, errPostsMarshal := json.Marshal(posts)
+        if errPostsMarshal != nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                log.Printf("||ERROR|| [Handler.GetPostsWithCategory]: json.Marshal(posts) failed: %v\n", errPostsMarshal)
+                return
+        }</span>
+
+        <span class="cov8" title="1">w.WriteHeader(http.StatusOK)
+        if _, errRespWrite := w.Write(resp); errRespWrite != nil </span><span class="cov0" title="0">{
+                log.Printf("||ERROR|| [Handler.GetPostsWithCategory]: w.Write(resp) failed: %v\n", errRespWrite)
+                return
+        }</span>
+
+}
+
+func (h *Handler) GetPostsWithUser(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        ctx := r.Context()
+        username := mux.Vars(r)["username"]
+
+        posts, errGetPosts := h.useCase.GetPostsWithUser(ctx, username)
+        if errGetPosts != nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                log.Printf("||ERROR|| [Handler.GetPostsWithUser]: h.useCase.GetPostsWithUser(ctx, username) failed: %v\n", errGetPosts)
+                return
+        }</span>
+
+        <span class="cov8" title="1">resp, errPostMarshal := json.Marshal(posts)
+        if errPostMarshal != nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                log.Printf("||ERROR|| [Handler.GetPostsWithUser]: json.Marshal(posts) failed: %v\n", errPostMarshal)
+                return
+        }</span>
+
+        <span class="cov8" title="1">w.WriteHeader(http.StatusOK)
+        if _, errRespWrite := w.Write(resp); errRespWrite != nil </span><span class="cov0" title="0">{
+                log.Printf("||ERROR|| [Handler.GetPostsWithUser]: w.Write(resp) failed: %v\n", errRespWrite)
+                return
+        }</span>
+}
+
+func (h *Handler) GetPost(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        ctx := r.Context()
+        postID := mux.Vars(r)["postID"]
+
+        post, errGetPosts := h.useCase.GetPost(ctx, postID)
+        if errGetPosts != nil </span><span class="cov8" title="1">{
+                log.Printf("||ERROR|| [Handler.GetPost]-&gt;%v", errGetPosts)
+
+                objResp := struct {
+                        Message string `json:"message"`
+                }{}
+                switch </span>{
+                case errors.Is(errGetPosts, interfaces.ErrPostNotExists):<span class="cov8" title="1">
+                        objResp.Message = interfaces.ErrPostNotExists.Error()</span>
+                default:<span class="cov8" title="1">
+                        objResp.Message = interfaces.ErrUnknownErrorMsg.Error()</span>
+                }
+
+                <span class="cov8" title="1">resp, errRespMarshal := json.Marshal(objResp)
+                if errRespMarshal != nil </span><span class="cov0" title="0">{
+                        w.WriteHeader(http.StatusInternalServerError)
+                        log.Printf("||ERROR|| [Handler.GetPost]: json.Marshal(objResp) failed: %v\n", errRespMarshal)
+                        return
+                }</span>
+
+                <span class="cov8" title="1">w.WriteHeader(http.StatusInternalServerError)
+                if _, errRespWrite := w.Write(resp); errRespWrite != nil </span><span class="cov0" title="0">{
+                        log.Printf("||ERROR|| [Handler.GetPost]: w.Write(resp) failed: %v\n", errRespWrite)
+                        return
+                }</span>
+
+                <span class="cov8" title="1">return</span>
+        }
+
+        <span class="cov8" title="1">resp, errPostMarshal := json.Marshal(post)
+        if errPostMarshal != nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                log.Printf("||ERROR|| [Handler.GetPost]: json.Marshal(posts) failed: %v\n", errPostMarshal)
+                return
+        }</span>
+
+        <span class="cov8" title="1">w.WriteHeader(http.StatusOK)
+        if _, errRespWrite := w.Write(resp); errRespWrite != nil </span><span class="cov8" title="1">{
+                log.Printf("||ERROR|| [Handler.GetPost]: w.Write(resp) failed: %v\n", errRespWrite)
+                return
+        }</span>
+}
+
+func (h *Handler) DeletePost(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        ctx := r.Context()
+        rawSession := r.Context().Value(auth.SessKey)
+        if rawSession == nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusUnauthorized)
+                log.Println("||ERROR|| [Handler.DeletePost]: unauthorized")
+                return
+        }</span>
+        <span class="cov8" title="1">session, ok := rawSession.(auth.Session)
+        if !ok </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                log.Println("||ERROR|| [Handler.DeletePost]: type assertion rawSession.(auth.Session) failed")
+                return
+        }</span>
+        <span class="cov8" title="1">username := session.Username
+
+        postID := mux.Vars(r)["postID"]
+
+        errDeletePost := h.useCase.DeletePost(ctx, username, postID)
+        if errDeletePost != nil </span><span class="cov0" title="0">{
+                log.Printf("||ERROR|| [Handler.DeletePost]-&gt;%v", errDeletePost)
+
+                objResp := struct {
+                        Message string `json:"message"`
+                }{}
+                switch </span>{
+                case errors.Is(errDeletePost, interfaces.ErrAccessDenied):<span class="cov0" title="0">
+                        w.WriteHeader(http.StatusUnauthorized)
+                        return</span>
+                case errors.Is(errDeletePost, interfaces.ErrPostNotExists):<span class="cov0" title="0">
+                        objResp.Message = errPostNotFoundMsg</span>
+
+                default:<span class="cov0" title="0">
+                        objResp.Message = errUnknownErrorMsg</span>
+
+                }
+                <span class="cov0" title="0">resp, errRespMarshal := json.Marshal(objResp)
+                if errRespMarshal != nil </span><span class="cov0" title="0">{
+                        w.WriteHeader(http.StatusInternalServerError)
+                        log.Printf("||ERROR|| [Handler.DeletePost]: json.Marshal(objResp) failed: %v\n", errRespMarshal)
+                        return
+                }</span>
+
+                <span class="cov0" title="0">w.WriteHeader(http.StatusInternalServerError)
+                if _, errRespWrite := w.Write(resp); errRespWrite != nil </span><span class="cov0" title="0">{
+                        log.Printf("||ERROR|| [Handler.DeletePost]: w.Write(resp) failed: %v\n", errRespWrite)
+                        return
+                }</span>
+
+                <span class="cov0" title="0">return</span>
+        }
+
+        <span class="cov8" title="1">objResponse := struct {
+                Message string
+        }{
+                Message: successMsg,
+        }
+
+        resp, errRespMarshal := json.Marshal(objResponse)
+        if errRespMarshal != nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                log.Printf("||ERROR|| [Handler.DeletePost]: json.Marshal(objResponse) failed: %v\n", errRespMarshal)
+                return
+        }</span>
+
+        <span class="cov8" title="1">w.WriteHeader(http.StatusOK)
+        if _, errRespWrite := w.Write(resp); errRespWrite != nil </span><span class="cov0" title="0">{
+                log.Printf("||ERROR|| [Handler.DeletePost]: w.Write(resp) failed: %v\n", errRespWrite)
+                return
+        }</span>
+}
+
+func (h *Handler) Upvote(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+        ctx := r.Context()
+        val := ctx.Value(auth.SessKey)
+        if val == nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusUnauthorized)
+                log.Println("||ERROR|| [Handler.Upvote]: unauthorized")
+                return
+        }</span>
+        <span class="cov0" title="0">session, ok := val.(auth.Session)
+        if !ok </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                log.Println(" ||ERROR|| [Handler.Upvote]: type assertion rawSession.(auth.Session) failed")
+                return
+        }</span>
+
+        <span class="cov0" title="0">postID := mux.Vars(r)["postID"]
+
+        post, errUpvote := h.useCase.Upvote(ctx, session.ID, postID)
+
+        if errUpvote != nil </span><span class="cov0" title="0">{
+                log.Printf("||ERROR|| [Handler.Upvote]-&gt;%v", errUpvote)
+
+                objResp := struct {
+                        Message string `json:"message"`
+                }{}
+                switch </span>{
+                case errors.Is(errUpvote, interfaces.ErrPostNotExists):<span class="cov0" title="0">
+                        objResp.Message = errPostNotFoundMsg</span>
+                case errors.Is(errUpvote, entity.ErrAlreadyUpvote):<span class="cov0" title="0">
+                        objResp.Message = errAlreadyUpvoteMsg</span>
+                default:<span class="cov0" title="0">
+                        objResp.Message = errUnknownErrorMsg</span>
+                }
+
+                <span class="cov0" title="0">resp, errRespMarshal := json.Marshal(objResp)
+                if errRespMarshal != nil </span><span class="cov0" title="0">{
+                        w.WriteHeader(http.StatusInternalServerError)
+                        log.Printf("||ERROR|| [Handler.Upvote]: json.Marshal(objResp) failed: %v\n", errRespMarshal)
+                        return
+                }</span>
+
+                <span class="cov0" title="0">w.WriteHeader(http.StatusInternalServerError)
+                if _, errRespWrite := w.Write(resp); errRespWrite != nil </span><span class="cov0" title="0">{
+                        log.Printf("||ERROR|| [Handler.Upvote]: w.Write(resp) failed: %v\n", errRespWrite)
+                        return
+                }</span>
+
+                <span class="cov0" title="0">return</span>
+        }
+
+        <span class="cov0" title="0">resp, errPostMarshal := json.Marshal(post)
+        if errPostMarshal != nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                log.Printf("||ERROR|| [Handler.Upvote]: json.Marshal(post) failed: %v\n", errPostMarshal)
+                return
+        }</span>
+
+        <span class="cov0" title="0">w.WriteHeader(http.StatusOK)
+        if _, errRespWrite := w.Write(resp); errRespWrite != nil </span><span class="cov0" title="0">{
+                log.Printf("||ERROR|| [Handler.Upvote]: w.Write(resp) failed: %v\n", errRespWrite)
+                return
+        }</span>
+}
+
+func (h *Handler) Downvote(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+        ctx := r.Context()
+        val := ctx.Value(auth.SessKey)
+        if val == nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusUnauthorized)
+                log.Println("||ERROR|| [Handler.Downvote]: unauthorized")
+                return
+        }</span>
+        <span class="cov0" title="0">session, ok := val.(auth.Session)
+        if !ok </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                log.Println("||ERROR|| [Handler.Downvote]: type assertion rawSession.(auth.Session) failed")
+                return
+        }</span>
+
+        <span class="cov0" title="0">postID := mux.Vars(r)["postID"]
+
+        post, errDownvote := h.useCase.Downvote(ctx, session.ID, postID)
+
+        if errDownvote != nil </span><span class="cov0" title="0">{
+                log.Printf("||ERROR|| [Handler.Downvote]-&gt;%v", errDownvote)
+
+                objResp := struct {
+                        Message string `json:"message"`
+                }{}
+                switch </span>{
+                case errors.Is(errDownvote, interfaces.ErrPostNotExists):<span class="cov0" title="0">
+                        objResp.Message = errPostNotFoundMsg</span>
+                case errors.Is(errDownvote, entity.ErrAlreadyDownvote):<span class="cov0" title="0">
+                        objResp.Message = errAlreadyDownvoteMsg</span>
+                default:<span class="cov0" title="0">
+                        objResp.Message = errUnknownErrorMsg</span>
+                }
+
+                <span class="cov0" title="0">resp, errRespMarshal := json.Marshal(objResp)
+                if errRespMarshal != nil </span><span class="cov0" title="0">{
+                        w.WriteHeader(http.StatusInternalServerError)
+                        log.Printf("||ERROR|| [Handler.Downvote]: json.Marshal(objResp) failed: %v\n", errRespMarshal)
+                        return
+                }</span>
+
+                <span class="cov0" title="0">w.WriteHeader(http.StatusInternalServerError)
+                if _, errRespWrite := w.Write(resp); errRespWrite != nil </span><span class="cov0" title="0">{
+                        log.Printf("||ERROR|| [Handler.Downvote]: w.Write(resp) failed: %v\n", errRespWrite)
+                        return
+                }</span>
+
+                <span class="cov0" title="0">return</span>
+        }
+
+        <span class="cov0" title="0">resp, errPostMarshal := json.Marshal(post)
+        if errPostMarshal != nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                log.Printf("||ERROR|| [Handler.Downvote]: json.Marshal(post) failed: %v\n", errPostMarshal)
+                return
+        }</span>
+
+        <span class="cov0" title="0">w.WriteHeader(http.StatusOK)
+        if _, errRespWrite := w.Write(resp); errRespWrite != nil </span><span class="cov0" title="0">{
+                log.Printf("||ERROR|| [Handler.Downvote]: w.Write(resp) failed: %v\n", errRespWrite)
+                return
+        }</span>
+
+}
+
+func (h *Handler) Unvote(w http.ResponseWriter, r *http.Request) <span class="cov0" title="0">{
+        ctx := r.Context()
+        val := ctx.Value(auth.SessKey)
+        if val == nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusUnauthorized)
+                log.Println("||ERROR|| [Handler.Unvote]: unauthorized")
+                return
+        }</span>
+        <span class="cov0" title="0">session, ok := val.(auth.Session)
+        if !ok </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                log.Println("||ERROR|| [Handler.Unvote]: type assertion rawSession.(auth.Session) failed")
+                return
+        }</span>
+
+        <span class="cov0" title="0">postID := mux.Vars(r)["postID"]
+
+        post, errUnvote := h.useCase.Unvote(ctx, session.ID, postID)
+
+        if errUnvote != nil </span><span class="cov0" title="0">{
+                log.Printf("||ERROR|| [Handler.Unvote]-&gt;%v", errUnvote)
+
+                objResp := struct {
+                        Message string `json:"message"`
+                }{}
+                switch </span>{
+                case errors.Is(errUnvote, interfaces.ErrPostNotExists):<span class="cov0" title="0">
+                        objResp.Message = errPostNotFoundMsg</span>
+                case errors.Is(errUnvote, entity.ErrAlreadyUnvote):<span class="cov0" title="0">
+                        objResp.Message = errAlreadyUnvoteMsg</span>
+                default:<span class="cov0" title="0">
+                        objResp.Message = errUnknownErrorMsg</span>
+                }
+
+                <span class="cov0" title="0">resp, errRespMarshal := json.Marshal(objResp)
+                if errRespMarshal != nil </span><span class="cov0" title="0">{
+                        w.WriteHeader(http.StatusInternalServerError)
+                        log.Printf("||ERROR|| [Handler.Unvote]: json.Marshal(objResp) failed: %v\n", errRespMarshal)
+                        return
+                }</span>
+
+                <span class="cov0" title="0">w.WriteHeader(http.StatusInternalServerError)
+                if _, errRespWrite := w.Write(resp); errRespWrite != nil </span><span class="cov0" title="0">{
+                        log.Printf("||ERROR|| [Handler.Unvote]: w.Write(resp) failed: %v\n", errRespWrite)
+                        return
+                }</span>
+
+                <span class="cov0" title="0">return</span>
+        }
+
+        <span class="cov0" title="0">resp, errPostMarshal := json.Marshal(post)
+        if errPostMarshal != nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                log.Printf("||ERROR|| [Handler.Unvote]: json.Marshal(post) failed: %v\n", errPostMarshal)
+                return
+        }</span>
+
+        <span class="cov0" title="0">w.WriteHeader(http.StatusOK)
+        if _, errRespWrite := w.Write(resp); errRespWrite != nil </span><span class="cov0" title="0">{
+                log.Printf("||ERROR|| [Handler.Unvote]: w.Write(resp) failed: %v\n", errRespWrite)
+                return
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package handler
+
+import (
+        "encoding/json"
+        "errors"
+        "io"
+        "log"
+        "net/http"
+
+        "gitlab.com/vk-golang/lectures/06_databases/99_hw/redditclone/internal/entity"
+        "gitlab.com/vk-golang/lectures/06_databases/99_hw/redditclone/internal/interfaces"
+)
+
+func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        ctx := r.Context()
+        body, errBodyReadAll := io.ReadAll(r.Body)
+        if errBodyReadAll != nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                log.Printf("||ERROR|| [Handler.SignUp]: io.ReadAll(req.Body) failed: %v\n", errBodyReadAll)
+                return
+        }</span>
+
+        <span class="cov8" title="1">objReq := entity.User{}
+
+        errReqUnmarshal := json.Unmarshal(body, &amp;objReq)
+        if errReqUnmarshal != nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                log.Printf("||ERROR|| [Handler.SignUp]: json.Unmarshal(req.Body, &amp;objReq) failed: %v\n", errReqUnmarshal)
+                return
+        }</span>
+
+        <span class="cov8" title="1">userExtend, errSignUp := h.useCase.SignUp(ctx, objReq)
+        if errSignUp != nil </span><span class="cov0" title="0">{
+                log.Printf("||ERROR|| [Handler.SignUp]-&gt;%v\n", errSignUp)
+
+                objResp := struct {
+                        Errors []handlerError `json:"errors"`
+                }{}
+                objRespInvalid := struct {
+                        Message string `json:"message"`
+                }{}
+                statusCode := 0
+                switch </span>{
+                case errors.Is(errSignUp, interfaces.ErrUserExists):<span class="cov0" title="0">
+                        objResp.Errors = append(objResp.Errors, handlerError{
+                                Location: "body",
+                                Param:    "username",
+                                Value:    objReq.Username,
+                                Msg:      errUserAlreadyExists,
+                        })
+                        statusCode = http.StatusUnprocessableEntity</span>
+                case errors.Is(errSignUp, interfaces.ErrConstructObject):<span class="cov0" title="0">
+                        objRespInvalid.Message = errConstructObjectMsg
+                        statusCode = http.StatusInternalServerError</span>
+                default:<span class="cov0" title="0">
+                        objRespInvalid.Message = errUnknownErrorMsg
+                        statusCode = http.StatusInternalServerError</span>
+                }
+
+                <span class="cov0" title="0">var resp []byte
+                if len(objResp.Errors) &gt; 0 </span><span class="cov0" title="0">{
+                        res, errRespMarshal := json.Marshal(objResp)
+                        if errRespMarshal != nil </span><span class="cov0" title="0">{
+                                w.WriteHeader(http.StatusInternalServerError)
+                                log.Printf("||ERROR|| [Handler.SignUp]: json.Marshal(objResp) failed: %v\n", errRespMarshal)
+                                return
+                        }</span>
+                        <span class="cov0" title="0">resp = res</span>
+                } else<span class="cov0" title="0"> {
+                        res, errRespMarshal := json.Marshal(objRespInvalid)
+                        if errRespMarshal != nil </span><span class="cov0" title="0">{
+                                w.WriteHeader(http.StatusInternalServerError)
+                                log.Printf("||ERROR|| [Handler.SignUp]: json.Marshal(objResp) failed: %v\n", errRespMarshal)
+                                return
+                        }</span>
+                        <span class="cov0" title="0">resp = res</span>
+                }
+
+                <span class="cov0" title="0">w.WriteHeader(statusCode)
+                if _, errRespWrite := w.Write(resp); errRespWrite != nil </span><span class="cov0" title="0">{
+                        log.Printf("||ERROR|| [Handler.SignUp]: w.Write(resp) failed: %v\n", errRespWrite)
+                        return
+                }</span>
+
+                <span class="cov0" title="0">return</span>
+        }
+
+        <span class="cov8" title="1">accessToken, errCreateSession := h.Auth.CreateSession(userExtend)
+        if errCreateSession != nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                log.Printf("||ERROR|| [Handler.SignUp]: h.Auth.CreateToken(userExtend) failed: %v\n", errCreateSession)
+                return
+        }</span>
+
+        <span class="cov8" title="1">objResp := struct {
+                Token string `json:"token"`
+        }{
+                Token: accessToken,
+        }
+
+        resp, errRespMarshal := json.Marshal(objResp)
+        if errRespMarshal != nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                log.Printf("||ERROR|| [Handler.SignUp]: json.Marshal(objResp) failed: %v\n", errRespMarshal)
+                return
+        }</span>
+
+        <span class="cov8" title="1">w.WriteHeader(http.StatusOK)
+        if _, errRespWrite := w.Write(resp); errRespWrite != nil </span><span class="cov0" title="0">{
+                log.Printf("||ERROR|| [Handler.SignUp]: w.Write(resp) failed: %v\n", errRespWrite)
+                return
+        }</span>
+}
+
+func (h *Handler) Login(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        ctx := r.Context()
+        body, errBodyReadAll := io.ReadAll(r.Body)
+        if errBodyReadAll != nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                log.Printf("||ERROR|| [Handler.Login]: io.ReadAll(req.Body) failed: %v\n", errBodyReadAll)
+                return
+        }</span>
+
+        <span class="cov8" title="1">objReq := entity.User{}
+
+        errReqUnmarshal := json.Unmarshal(body, &amp;objReq)
+        if errReqUnmarshal != nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                log.Printf("||ERROR|| [Handler.Login]: json.Unmarshal(req.Body, &amp;objReq) failed: %v\n", errReqUnmarshal)
+                return
+        }</span>
+
+        <span class="cov8" title="1">userExtend, errLogin := h.useCase.Login(ctx, objReq.Username, objReq.Password)
+        if errLogin != nil </span><span class="cov0" title="0">{
+                log.Printf("||ERROR|| [Handler.Login]-&gt;%v\n", errLogin)
+
+                objResp := struct {
+                        Message string `json:"message"`
+                }{}
+                statusCode := 0
+                switch </span>{
+                case errors.Is(errLogin, interfaces.ErrUserNotExists):<span class="cov0" title="0">
+                        objResp.Message = errUserNotExistsMsg
+                        statusCode = http.StatusBadRequest</span>
+                case errors.Is(errLogin, interfaces.ErrInvalidPassword):<span class="cov0" title="0">
+                        objResp.Message = errInvalidPasswordMsg
+                        statusCode = http.StatusUnauthorized</span>
+                default:<span class="cov0" title="0">
+                        objResp.Message = errUnknownErrorMsg
+                        statusCode = http.StatusInternalServerError</span>
+                }
+
+                <span class="cov0" title="0">resp, errRespMarshal := json.Marshal(objResp)
+                if errRespMarshal != nil </span><span class="cov0" title="0">{
+                        w.WriteHeader(http.StatusInternalServerError)
+                        log.Printf("||ERROR|| [Handler.Login]: json.Marshal(objResp) failed: %v\n", errRespMarshal)
+                        return
+                }</span>
+
+                <span class="cov0" title="0">w.WriteHeader(statusCode)
+                if _, errRespWrite := w.Write(resp); errRespWrite != nil </span><span class="cov0" title="0">{
+                        log.Printf("||ERROR|| [Handler.Login]: w.Write(resp) failed: %v\n", errRespWrite)
+                        return
+                }</span>
+
+                <span class="cov0" title="0">return</span>
+        }
+
+        <span class="cov8" title="1">accessToken, errCreateToken := h.Auth.CreateSession(userExtend)
+        if errCreateToken != nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                log.Printf("||ERROR|| [Handler.Login]: h.Auth.CreateToken(userExtend) failed: %v\n", errCreateToken)
+                return
+        }</span>
+
+        <span class="cov8" title="1">objResp := struct {
+                Token string `json:"token"`
+        }{
+                Token: accessToken,
+        }
+
+        resp, errRespMarshal := json.Marshal(objResp)
+        if errRespMarshal != nil </span><span class="cov0" title="0">{
+                w.WriteHeader(http.StatusInternalServerError)
+                log.Printf("||ERROR|| [Handler.Login]: json.Marshal(objResp) failed: %v\n", errRespMarshal)
+                return
+        }</span>
+
+        <span class="cov8" title="1">w.WriteHeader(http.StatusOK)
+        if _, errRespWrite := w.Write(resp); errRespWrite != nil </span><span class="cov0" title="0">{
+                log.Printf("||ERROR|| [Handler.Login]: w.Write(resp) failed: %v\n", errRespWrite)
+                return
+        }</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
